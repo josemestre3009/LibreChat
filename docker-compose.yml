@@ -4,8 +4,6 @@
 services:
   api:
     container_name: LibreChat
-    ports:
-      - "${PORT}:${PORT}"
     depends_on:
       - mongodb
       - rag_api
@@ -40,8 +38,6 @@ services:
   admin-panel:
     container_name: admin-panel
     image: registry.librechat.ai/librechat-ai/librechat-admin-panel:latest
-    ports:
-      - "${ADMIN_PANEL_PORT:-3000}:3000"
     depends_on:
       - api
     restart: always
