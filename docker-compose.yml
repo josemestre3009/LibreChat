@@ -1,3 +1,67 @@
+# LibreChat - Dokploy / Traefik deployment.
+# Configure runtime variables in Dokploy > Environment; do not commit .env.
+# No host ports are published. Dokploy routes to api:3080 and admin-panel:3000.
+services:
+  api:
+    container_name: LibreChat
+    image: registry.librechat.ai/librechat-ai/librechat-dev:latest
+    restart: always
+    user: "${UID:-1000}:${GID:-1000}"
+    depends_on:
+      - mongodb
+      - rag_api
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - .env
+    environment:
+      - LIBRECHAT_TEMP_CREDENTIALS_PATH=/app/data/.env.temp
+      - RAG_API_URL=http://rag_api:${RAG_PORT:-8000}
+      - PROXY=${PROXY:-}
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1,::1},${no_proxy:-},mongodb,chat-mongodb,meilisearch,chat-meilisearch,rag_api,vectordb,host.docker.internal
+      - http_proxy=${http_proxy:-}
+      - https_proxy=${https_proxy:-}
+      - no_proxy=${no_proxy:-localhost,127.0.0.1,::1},${NO_PROXY:-},mongodb,chat-mongodb,meilisearch,chat-meilisearch,rag_api,vectordb,host.docker.internal
+    volumes:
+      - librechat-images:/app/client/public/images
+      - librechat-uploads:/app/uploads
+      - librechat-logs:/app/logs
+      - librechat-skill:/app/skill
+      - librechat-data:/app/data
+
+  admin-panel:
+    container_name: admin-panel
+    image: registry.librechat.ai/librechat-ai/librechat-admin-panel:latest
+    depends_on:
+      - api
+    restart: always
+    environment:
+      - PORT=3000
+      - SESSION_SECRET=${ADMIN_PANEL_SESSION_SECRET}
+      - API_SERVER_URL=http://api:${PORT:-3080}
+      - VITE_API_BASE_URL=${DOMAIN_CLIENT}
+      - SESSION_COOKIE_SECURE=${ADMIN_PANEL_SESSION_COOKIE_SECURE:-true}
+
+  mongodb:
+    container_name: chat-mongodb
+    image: docker.io/library/mongo:8.0.20
+    restart: always
+    volumes:
+      - mongo-data:/data/db
+    command: mongod --noauth
+
+  meilisearch:
+    container_name: chat-meilisearch
+    image: docker.io/getmeili/meilisearch:v1.35.1
+    restart: always
+    environment:
+      - MEILI_HOST=${MEILI_HOST}
+      - MEILI_NO_ANALYTICS=${MEILI_NO_ANALYTICS:-true}
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+    volumes:
+      - meili-data:/meili_data
 
   vectordb:
     container_name: vectordb
