@@ -52,21 +52,19 @@ services:
     container_name: chat-mongodb
     image: docker.io/library/mongo:8.0.20
     restart: always
-    user: "${UID}:${GID}"
     volumes:
-      - ./data-node:/data/db
+      - mongo-data:/data/db
     command: mongod --noauth
   meilisearch:
     container_name: chat-meilisearch
     image: docker.io/getmeili/meilisearch:v1.35.1
     restart: always
-    user: "${UID}:${GID}"
     environment:
       - MEILI_HOST=http://meilisearch:7700
       - MEILI_NO_ANALYTICS=true
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
     volumes:
-      - ./meili_data_v1.35.1:/meili_data
+      - meili-data:/meili_data
   vectordb:
     container_name: vectordb
     image: docker.io/pgvector/pgvector:0.8.0-pg15-trixie
@@ -92,3 +90,5 @@ services:
 volumes:
   pgdata2:
   librechat-data:
+  mongo-data:
+  meili-data:
